@@ -11,8 +11,30 @@ program: expression | variableDefinition EOF
        variableDefinition : IDENTIFIER  '=' expression END_SENTENCE
        ;
 
-  //-------------------------------------
+       type : 'int'
+       | 'char'
+       | 'void'
+       | 'real'
+       | type '['INT_CONSTANT']'
+       | 'struct' '{' recordField+ '}'
+       ;
 
+       recordField : type IDENTIFIER END_SENTENCE
+       ;
+
+  //-------------------------------------
+//Reglas gramaticales no meter un varDefinition como cualquier statement -> let b:int;
+
+/*
+function f():void
+{
+ let a: int;
+ a = 2;
+ let b:int;
+ b= a;
+}
+*/
+//i,j :void;
 
 END_SENTENCE : ';'
             ;
