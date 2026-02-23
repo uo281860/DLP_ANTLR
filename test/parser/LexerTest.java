@@ -24,10 +24,10 @@ public class LexerTest {
                     break;
             /*    case TSmmLexer.CHAR_CONSTANT:
                     semanticValue = LexerHelper.lexemeToChar(token.getText());
-                    break;
+                    break;*/
                 case TSmmLexer.REAL_CONSTANT:
                     semanticValue = LexerHelper.lexemeToReal(token.getText());
-                    break;*/
+                    break;
                 default:
                     semanticValue = token.getText();
             }
@@ -47,12 +47,12 @@ public class LexerTest {
             new LexicalInfo(7, 5, "0", TSmmLexer.INT_CONSTANT, 0),
             new LexicalInfo(7, 6, "120", TSmmLexer.INT_CONSTANT, 120),
 
-//			new LexicalInfo(11, 5, "12.3", TSmmLexer.REAL_CONSTANT, 12.3),
-//			new LexicalInfo(11, 11, "2.", TSmmLexer.REAL_CONSTANT, 2.0),
-//			new LexicalInfo(11, 15, ".34", TSmmLexer.REAL_CONSTANT, 0.34),
-//			new LexicalInfo(12, 5, "34.12E-3", TSmmLexer.REAL_CONSTANT, 0.03412),
-//			new LexicalInfo(12, 15, "3e3", TSmmLexer.REAL_CONSTANT, 3000.0),
-//			new LexicalInfo(12, 20, "0.0003", TSmmLexer.REAL_CONSTANT, .0003),
+			new LexicalInfo(11, 5, "12.3", TSmmLexer.REAL_CONSTANT, 12.3),
+			new LexicalInfo(11, 11, "2.", TSmmLexer.REAL_CONSTANT, 2.0),
+			new LexicalInfo(11, 15, ".34", TSmmLexer.REAL_CONSTANT, 0.34),
+			new LexicalInfo(12, 5, "34.12E-3", TSmmLexer.REAL_CONSTANT, 0.03412),
+			new LexicalInfo(12, 15, "3e3", TSmmLexer.REAL_CONSTANT, 3000.0),
+			new LexicalInfo(12, 20, "0.0003", TSmmLexer.REAL_CONSTANT, .0003),
 //
 //
 //			new LexicalInfo(16, 5, "var1", TSmmLexer.ID, "var1"),
