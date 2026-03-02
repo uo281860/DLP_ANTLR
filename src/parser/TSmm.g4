@@ -174,4 +174,4 @@ fragment ESCAPED_CHAR : '\\' [nt]
 fragment ASCII_CHAR   : '\\' [0-9][0-9][0-9]
 	    ;
 IDENTIFIER : [a-zA-Z_] [a-zA-Z0-9_]*
-	    ;
+	    ;     
