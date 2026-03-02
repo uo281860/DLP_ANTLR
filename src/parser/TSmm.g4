@@ -1,4 +1,7 @@
 grammar TSmm;
+@header{
+import ast.*;
+}
 
 // ------------------------------
 // PARSER RULES
@@ -13,12 +16,10 @@ definition
     | functionDefinition
     ;
 
-// let a : int;
 variableDefinition
     : 'let' IDENTIFIER ':' type END_SENTENCE
     ;
 
-// function f(a:int, b:real):void { ... }
 functionDefinition
     : 'function' IDENTIFIER '(' parameters? ')' ':' type block
     ;
@@ -64,7 +65,7 @@ returnStatement
 // EXPRESSIONS (with precedence)
 // ------------------------------
 
-expression
+expression [Expression ast]
     : logicalOr
     ;
 
@@ -111,11 +112,11 @@ invocation
     ;
 
 primary
-    : INT_CONSTANT
+    : INT_CONSTANT{%ast = new IntLiteral($INT_CONSTANT.getCharPositionInLine, LexerHelper.lexemeToChar}
     | REAL_CONSTANT
     | CHAR_CONSTANT
     | IDENTIFIER
-    | '(' expression ')'
+    | '(' expression ')' // e1=expresion OP=('+'|'-') e2=expression {$ast * new Arithmetic($e1.ast.getLine(), $e1.getColumn(),$e1.ast,$OP.txt,$e2.ast);}
     ;
 
 // ------------------------------
