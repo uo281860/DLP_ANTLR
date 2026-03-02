@@ -1,26 +1,139 @@
-grammar TSmm;	
+grammar TSmm;
 
-program: expression | variableDefinition EOF
-       ;
+// ------------------------------
+// PARSER RULES
+// ------------------------------
 
-       expression : INT_CONSTANT
-       | expression ('+' | '-') expression
-       | IDENTIFIER
-       ;
+program
+    : definition* EOF
+    ;
 
-       variableDefinition : IDENTIFIER  '=' expression END_SENTENCE
-       ;
+definition
+    : variableDefinition
+    | functionDefinition
+    ;
 
-       type : 'int'
-       | 'char'
-       | 'void'
-       | 'real'
-       | type '['INT_CONSTANT']'
-       | 'struct' '{' recordField+ '}'
-       ;
+// let a : int;
+variableDefinition
+    : 'let' IDENTIFIER ':' type END_SENTENCE
+    ;
 
-       recordField : type IDENTIFIER END_SENTENCE
-       ;
+// function f(a:int, b:real):void { ... }
+functionDefinition
+    : 'function' IDENTIFIER '(' parameters? ')' ':' type block
+    ;
+
+parameters
+    : parameter (',' parameter)*
+    ;
+
+parameter
+    : IDENTIFIER ':' type
+    ;
+
+block
+    : '{' statement* '}'
+    ;
+
+statement
+    : variableDefinition
+    | assignment
+    | ifStatement
+    | whileStatement
+    | returnStatement
+    | invocation END_SENTENCE
+    ;
+
+assignment
+    : expression '=' expression END_SENTENCE
+    ;
+
+ifStatement
+    : 'if' '(' expression ')' block ('else' block)?
+    ;
+
+whileStatement
+    : 'while' '(' expression ')' block
+    ;
+
+returnStatement
+    : 'return' expression? END_SENTENCE
+    ;
+
+// ------------------------------
+// EXPRESSIONS (with precedence)
+// ------------------------------
+
+expression
+    : logicalOr
+    ;
+
+logicalOr
+    : logicalAnd ('||' logicalAnd)*
+    ;
+
+logicalAnd
+    : equality ('&&' equality)*
+    ;
+
+equality
+    : relational (('==' | '!=') relational)*
+    ;
+
+relational
+    : additive (('<' | '<=' | '>' | '>=') additive)*
+    ;
+
+additive
+    : multiplicative (('+' | '-') multiplicative)*
+    ;
+
+multiplicative
+    : unary (('*' | '/' | '%') unary)*
+    ;
+
+unary
+    : ('!' | '+' | '-') unary
+    | postfix
+    ;
+
+postfix
+    : primary ( ('[' expression ']') | ('.' IDENTIFIER) | ('(' arguments? ')') )*
+    ;
+
+arguments
+    : expression (',' expression)*
+    ;
+
+// A call is a postfix form; we also keep a dedicated rule for statement calls.
+invocation
+    : IDENTIFIER '(' arguments? ')'
+    ;
+
+primary
+    : INT_CONSTANT
+    | REAL_CONSTANT
+    | CHAR_CONSTANT
+    | IDENTIFIER
+    | '(' expression ')'
+    ;
+
+// ------------------------------
+// TYPES
+// ------------------------------
+
+type
+    : 'int'
+    | 'char'
+    | 'void'
+    | 'real'
+    | type '[' INT_CONSTANT ']'
+    | 'struct' '{' recordField+ '}'
+    ;
+
+recordField
+    : type IDENTIFIER END_SENTENCE
+    ;
 
   //-------------------------------------
 //Reglas gramaticales no meter un varDefinition como cualquier statement -> let b:int;
@@ -61,4 +174,3 @@ fragment ASCII_CHAR   : '\\' [0-9][0-9][0-9]
 	    ;
 IDENTIFIER : [a-zA-Z_] [a-zA-Z0-9_]*
 	    ;
-
