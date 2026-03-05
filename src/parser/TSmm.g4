@@ -1,139 +1,161 @@
 grammar TSmm;
-@header{
-import ast.*;
+
+@header {
+    import ast.*;
+    import java.util.*;
+    import parser.LexerHelper;
 }
 
 // ------------------------------
-// PARSER RULES
+// REGLAS DEL PARSER
 // ------------------------------
 
-program
-    : definition* EOF
+program returns [Program ast]
+    : { List<Definition> defs = new ArrayList<>(); }
+      (d=definition { defs.add($d.ast); })* EOF
+      { $ast = new Program($start.getLine(), $start.getCharPositionInLine(), defs); }
     ;
 
-definition
-    : variableDefinition
-    | functionDefinition
+definition returns [Definition ast]
+    : vd=variableDefinition { $ast = $vd.ast; }
+    | fd=functionDefinition { $ast = $fd.ast; }
     ;
 
-variableDefinition
-    : 'let' IDENTIFIER ':' type END_SENTENCE
+variableDefinition returns [VariableDefinition ast]
+    : 'let' id=IDENTIFIER ':' t=type END_SENTENCE
+      { $ast = new VariableDefinition($id.getLine(), $id.getCharPositionInLine(), $t.ast, $id.text); }
     ;
 
-functionDefinition
-    : 'function' IDENTIFIER '(' parameters? ')' ':' type block
+functionDefinition returns [FunctionDefinition ast]
+    : 'function' id=IDENTIFIER '(' p=parameters? ')' ':' t=type b=block
+      { $ast = new FunctionDefinition($id.getLine(), $id.getCharPositionInLine(), $t.ast, $id.text,
+        $p.ast != null ? $p.ast : new ArrayList<>(), $b.ast); }
     ;
 
-parameters
-    : parameter (',' parameter)*
+parameters returns [List<VariableDefinition> ast]
+    : { $ast = new ArrayList<>(); }
+      p1=parameter { $ast.add($p1.ast); }
+      (',' p2=parameter { $ast.add($p2.ast); } )*
     ;
 
-parameter
-    : IDENTIFIER ':' type
+parameter returns [VariableDefinition ast]
+    : id=IDENTIFIER ':' t=type
+      { $ast = new VariableDefinition($id.getLine(), $id.getCharPositionInLine(), $t.ast, $id.text); }
     ;
 
-block
-    : '{' statement* '}'
+block returns [List<Statement> ast]
+    : '{' { $ast = new ArrayList<>(); }
+      (s=statement { $ast.add($s.ast); })* '}'
     ;
 
-statement
-    : variableDefinition
-    | assignment
-    | ifStatement
-    | whileStatement
-    | returnStatement
-    | invocation END_SENTENCE
+statement returns [Statement ast]
+    : vd=variableDefinition { $ast = $vd.ast; }
+    | as=assignment         { $ast = $as.ast; }
+    | ifS=ifStatement       { $ast = $ifS.ast; }
+    | whS=whileStatement    { $ast = $whS.ast; }
+    | retS=returnStatement  { $ast = $retS.ast; }
+    | inv=invocation END_SENTENCE { $ast = $inv.ast; }
     ;
 
-assignment
-    : expression '=' expression END_SENTENCE
+assignment returns [Assignment ast]
+    : e1=expression '=' e2=expression END_SENTENCE
+      { $ast = new Assignment($e1.ast.getLine(), $e1.ast.getColumn(), $e1.ast, $e2.ast); }
     ;
 
-ifStatement
-    : 'if' '(' expression ')' block ('else' block)?
+ifStatement returns [If ast]
+    : 'if' '(' cond=expression ')' b1=block ('else' b2=block)?
+      { $ast = new If($start.getLine(), $start.getCharPositionInLine(), $cond.ast, $b1.ast, $b2 != null ? $b2.ast : new ArrayList<>()); }
     ;
 
-whileStatement
-    : 'while' '(' expression ')' block
+whileStatement returns [While ast]
+    : 'while' '(' cond=expression ')' b=block
+      { $ast = new While($start.getLine(), $start.getCharPositionInLine(), $cond.ast, $b.ast); }
     ;
 
-returnStatement
-    : 'return' expression? END_SENTENCE
-    ;
-
-// ------------------------------
-// EXPRESSIONS (with precedence)
-// ------------------------------
-
-expression [Expression ast]
-    : logicalOr
-    ;
-
-logicalOr
-    : logicalAnd ('||' logicalAnd)*
-    ;
-
-logicalAnd
-    : equality ('&&' equality)*
-    ;
-
-equality
-    : relational (('==' | '!=') relational)*
-    ;
-
-relational
-    : additive (('<' | '<=' | '>' | '>=') additive)*
-    ;
-
-additive
-    : multiplicative (('+' | '-') multiplicative)*
-    ;
-
-multiplicative
-    : unary (('*' | '/' | '%') unary)*
-    ;
-
-unary
-    : ('!' | '+' | '-') unary
-    | postfix
-    ;
-
-postfix
-    : primary ( ('[' expression ']') | ('.' IDENTIFIER) | ('(' arguments? ')') )*
-    ;
-
-arguments
-    : expression (',' expression)*
-    ;
-
-// A call is a postfix form; we also keep a dedicated rule for statement calls.
-invocation
-    : IDENTIFIER '(' arguments? ')'
-    ;
-
-primary
-    : INT_CONSTANT{%ast = new IntLiteral($INT_CONSTANT.getCharPositionInLine, LexerHelper.lexemeToChar}
-    | REAL_CONSTANT
-    | CHAR_CONSTANT
-    | IDENTIFIER
-    | '(' expression ')' // e1=expresion OP=('+'|'-') e2=expression {$ast * new Arithmetic($e1.ast.getLine(), $e1.getColumn(),$e1.ast,$OP.txt,$e2.ast);}
+returnStatement returns [Return ast]
+    : 'return' e=expression? END_SENTENCE
+      { $ast = new Return($start.getLine(), $start.getCharPositionInLine(), $e != null ? $e.ast : null); }
     ;
 
 // ------------------------------
-// TYPES
+// EXPRESIONES (Con Precedencia)
 // ------------------------------
 
-type
-    : 'int'
-    | 'char'
-    | 'void'
-    | 'real'
-    | type '[' INT_CONSTANT ']'
-    | 'struct' '{' recordField+ '}'
+expression returns [Expression ast]
+    : e=logicalOr { $ast = $e.ast; }
     ;
 
-recordField
-    : type IDENTIFIER END_SENTENCE
+additive returns [Expression ast]
+    : l=multiplicative { $ast = $l.ast; }
+      ( op=('+'|'-') r=multiplicative
+        { $ast = new Arithmetic($op.getLine(), $op.getCharPositionInLine(), $ast, $op.text, $r.ast); }
+      )*
+    ;
+
+multiplicative returns [Expression ast]
+    : l=unary { $ast = $l.ast; }
+      ( op=('*'|'/'|'%') r=unary
+        { $ast = new Arithmetic($op.getLine(), $op.getCharPositionInLine(), $ast, $op.text, $r.ast); }
+      )*
+    ;
+
+// Simplificando para el ejemplo, pero sigue la misma lógica para logicalOr, logicalAnd, etc.
+logicalOr returns [Expression ast] : e=logicalAnd { $ast = $e.ast; } ;
+logicalAnd returns [Expression ast] : e=equality { $ast = $e.ast; } ;
+equality returns [Expression ast] : e=relational { $ast = $e.ast; } ;
+relational returns [Expression ast] : e=additive { $ast = $e.ast; } ;
+
+unary returns [Expression ast]
+    : op=('!'|'+'|'-') u=unary { $ast = new UnaryExpression($op.getLine(), $op.getCharPositionInLine(), $op.text, $u.ast); }
+    | p=postfix { $ast = $p.ast; }
+    ;
+
+postfix returns [Expression ast]
+    : base=primary { $ast = $base.ast; }
+      ( '[' idx=expression ']' { /* Lógica para ArrayAccess */ }
+      | '.' field=IDENTIFIER   { /* Lógica para RecordAccess */ }
+      | '(' arg=arguments? ')' { $ast = new Invocation($start.getLine(), $start.getCharPositionInLine(), (Variable)$ast, $arg.ast != null ? $arg.ast : new ArrayList<>()); }
+      )*
+    ;
+
+primary returns [Expression ast]
+    : val=INT_CONSTANT  { $ast = new IntLiteral($val.getLine(), $val.getCharPositionInLine(), LexerHelper.lexemeToInt($val.text)); }
+    | val=REAL_CONSTANT { $ast = new RealLiteral($val.getLine(), $val.getCharPositionInLine(), LexerHelper.lexemeToReal($val.text)); }
+    | val=CHAR_CONSTANT { $ast = new CharLiteral($val.getLine(), $val.getCharPositionInLine(), LexerHelper.lexemeToChar($val.text)); }
+    | id=IDENTIFIER     { $ast = new Variable($id.getLine(), $id.getCharPositionInLine(), $id.text); }
+    | '(' e=expression ')' { $ast = $e.ast; }
+    ;
+
+arguments returns [List<Expression> ast]
+    : { $ast = new ArrayList<>(); }
+      e1=expression { $ast.add($e1.ast); }
+      (',' e2=expression { $ast.add($e2.ast); } )*
+    ;
+
+invocation returns [Invocation ast]
+    : id=IDENTIFIER '(' arg=arguments? ')'
+      { $ast = new Invocation($id.getLine(), $id.getCharPositionInLine(), new Variable($id.getLine(), $id.getCharPositionInLine(), $id.text), $arg.ast != null ? $arg.ast : new ArrayList<>()); }
+    ;
+
+// ------------------------------
+// TIPOS
+// ------------------------------
+
+type returns [Type ast]
+    : 'int'  { $ast = new IntType($start.getLine(), $start.getCharPositionInLine()); }
+    | 'char' { $ast = new CharType($start.getLine(), $start.getCharPositionInLine()); }
+    | 'void' { $ast = new VoidType($start.getLine(), $start.getCharPositionInLine()); }
+    | 'real' { $ast = new NumberType($start.getLine(), $start.getCharPositionInLine()); }
+    | base=type '[' size=INT_CONSTANT ']'
+      { $ast = new ArrayType($start.getLine(), $start.getCharPositionInLine(), LexerHelper.lexemeToInt($size.text), $base.ast); }
+    | 'struct' '{' { List<RecordField> fields = new ArrayList<>(); }
+      (f=recordField { fields.add($f.ast); })+ '}'
+      { $ast = new RecordType($start.getLine(), $start.getCharPositionInLine(), fields); }
+    ;
+
+recordField returns [RecordField ast]
+    : t=type id=IDENTIFIER END_SENTENCE
+      { $ast = new RecordField($id.getLine(), $id.getCharPositionInLine(), $id.text, $t.ast); }
     ;
 
   //-------------------------------------

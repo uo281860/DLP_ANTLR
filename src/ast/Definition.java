@@ -19,7 +19,7 @@ class VariableDefinition extends AbstractLocatable implements Definition {
 class FunctionDefinition extends AbstractLocatable implements Definition {
     private String name;
     private Type type;
-    private List<Statement> body;
+    private List<Statement> body;   
     public FunctionDefinition(int l, int c, String name, Type type, List<Statement> body) {
         super(l, c); this.name = name; this.type = type;
         this.body = body;

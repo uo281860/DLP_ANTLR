@@ -1,5 +1,8 @@
-// Generated from C:/Users/MARIO/EII/3º/DLP/DLP_ANTLR/src/parser/TSmm.g4 by ANTLR 4.13.2
+// Generated from C:/Users/uo281860/IdeaProjects/DLP_ANTLR/src/parser/TSmm.g4 by ANTLR 4.13.2
 package parser;
+
+import ast.*;
+
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
